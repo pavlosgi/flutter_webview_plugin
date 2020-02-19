@@ -21,7 +21,7 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
 
     UIViewController *viewController = [UIApplication sharedApplication].delegate.window.rootViewController;
     FlutterWebviewPlugin* instance = [[FlutterWebviewPlugin alloc] initWithViewController:viewController];
-    
+
     [registrar addMethodCallDelegate:instance channel:channel];
 }
 
@@ -97,7 +97,7 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
     _invalidUrlRegex = call.arguments[@"invalidUrlRegex"];
     _ignoreSSLErrors = call.arguments[@"ignoreSSLErrors"];
     _javaScriptChannelNames = [[NSMutableSet alloc] init];
-    
+
     WKUserContentController* userContentController = [[WKUserContentController alloc] init];
     if ([call.arguments[@"javascriptChannelNames"] isKindOfClass:[NSArray class]]) {
         NSArray* javaScriptChannelNames = call.arguments[@"javascriptChannelNames"];
@@ -135,6 +135,7 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
 
     WKWebViewConfiguration* configuration = [[WKWebViewConfiguration alloc] init];
     configuration.userContentController = userContentController;
+    configuration.allowsInlineMediaPlayback = YES;
     self.webview = [[WKWebView alloc] initWithFrame:rc configuration:configuration];
     self.webview.UIDelegate = self;
     self.webview.navigationDelegate = self;
@@ -142,7 +143,7 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
     self.webview.hidden = [hidden boolValue];
     self.webview.scrollView.showsHorizontalScrollIndicator = [scrollBar boolValue];
     self.webview.scrollView.showsVerticalScrollIndicator = [scrollBar boolValue];
-    
+
     [self.webview addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:NULL];
 
     WKPreferences* preferences = [[self.webview configuration] preferences];
@@ -173,7 +174,7 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
     else {
         completionHandler(NSURLSessionAuthChallengePerformDefaultHandling,nil);
     }
-    
+
 }
 
 - (CGRect)parseRect:(NSDictionary *)rect {
@@ -269,11 +270,11 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
 		NSString *url = call.arguments[@"url"];
 		NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
         NSDictionary *headers = call.arguments[@"headers"];
-        
+
         if (headers != nil) {
             [request setAllHTTPHeaderFields:headers];
         }
-        
+
         [self.webview loadRequest:request];
     }
 }
@@ -386,7 +387,7 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
     decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
 
     BOOL isInvalid = [self checkInvalidUrl: navigationAction.request.URL];
-    
+
     id data = @{@"url": navigationAction.request.URL.absoluteString,
                 @"type": isInvalid ? @"abortLoad" : @"shouldStart",
                 @"navigationType": [NSNumber numberWithInteger:navigationAction.navigationType]};
@@ -430,7 +431,7 @@ static NSString *const CHANNEL_NAME = @"flutter_webview_plugin";
 
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     NSString* url = webView.URL == nil ? @"?" : webView.URL.absoluteString;
-    
+
     [channel invokeMethod:@"onHttpError" arguments:@{@"code": [NSString stringWithFormat:@"%ld", error.code], @"url": url}];
 }
 
